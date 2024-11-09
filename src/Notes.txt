@@ -1,0 +1,615 @@
+import java.util.*;
+
+public class Lesson10_DivideAndConquer {
+    public static void main(String[] args) {
+        int[] arr = {-12, 10, 13, 56, 62, 68, 79, 87};
+
+        System.out.println(binarySearch(arr, 68, 0, arr.length - 1));
+
+    }
+    static int binarySearch(int[] arr, int target, int leftBound, int rightBound) {
+        if(leftBound > rightBound) {
+            return -1;
+        }
+
+        int mid = (rightBound + leftBound) / 2;
+        if(arr[mid] == target) {
+            return mid;
+        }
+        if(arr[mid] < target) {
+            return binarySearch(arr, target, mid + 1, rightBound);
+        }
+        if(arr[mid] > target) {
+            return binarySearch(arr, target, leftBound, mid - 1);
+        }
+    }
+}
+
+
+/*
+Lesson 10 - Algorithms with Recursion and Divide and Conquer
+
+Divide and Conquer -
+    - Solving complex problems by breaking them down into simpler sub-problems
+    - Combine the solutions to the sub-problems to solve the original problem
+Why is this recursive?
+    - Each subproblem needs to be solved, but to solve the subproblem, it also needs to be split into even smaller subproblems
+    - Base case: a subproblem can no longer be split
+
+DFS - recursive
+
+Fibonacci sequence - fib(n) = fib(n - 1) + fib(n - 2)
+
+Some sorting algorithms - merge sort, quick sort
+
+Merge sort: Sorting algorithm that divides an array into two halves,
+recursively sorts each half, and then merges the sorted halves to produce a sorted array
+
+Quick sort: This algorithm selects a 'pivot' element from the array and partitions the other elements into two-sub-arrays according to whether they are less than or greater than the pivot. The sub-arrays are sorted recursively
+
+Binary search:
+    - Searching algorithm that works on sorted arrays
+    - Repeatedly divides the search interval in half to look for some element e
+    - If middle element < e, search within the top half
+    - If middle element > e, search within the bottom half
+    - If middle element = e, return the element
+*/
+
+
+
+
+
+
+
+/*
+Student Help Hours:
+
+Maxwell Du
+
+Ronald Howes - WGA
+
+Lucas Ruizhi Chen
+
+Ziyao Ma
+
+Mondays:
+Ronald - 6pm-7pm, 8pm - 9pm (Section 4)
+Ziyao - 9pm - 10pm (Section 1)
+
+Tuesday:
+Ronald - 8pm - 9pm (Section 1)
+
+Wednesday:
+Lucas Chen - 6pm - 7pm (Section 2)
+Ronald - 8pm - 9pm (Section 4)
+Ziyao - 9pm - 10pm (Section 2)
+
+Thursday:
+Maxwell - 7pm - 8pm (Section 2)
+
+Friday:
+Maxwell - 7pm - 8pm (Section 2)
+Lucas - 8pm - 10pm (Section 2)
+
+Saturday:
+Lucas Chen - 6pm - 9pm (Section 2)
+
+
+email: andrewchen@staff.ktbyte.com
+
+*/
+
+
+
+
+
+// Bessie's dream: http://www.usaco.org/index.php?page=viewproblem2&cpid=575
+/*
+Run BFS on the maze, keeping in mind the constraints of the different tiles
+
+The first "path" that hits the end will be the shortest path
+
+*/
+
+
+import java.util.*;
+import java.io.*;
+
+public class dream {
+    static Cell[][] maze;
+    static int n, m;
+
+    public static void main(String[] args) throws IOException {
+        Scanner in = new Scanner(new File("dream.in"));
+        n = in.nextInt();
+        m = in.nextInt();
+
+        maze = new Cell[n][m];
+        for(int r = 0; r < n; r++) {
+            for(int c = 0; c < m; c++) {
+                maze[r][c] = new Cell(in.nextInt());
+            }
+        }
+        in.close();
+        Deque<Step> toTake = new ArrayDeque<>(8000000);
+        toTake.add(new Step(0, 0, false, 0, 0));
+
+
+        int result = -1;
+
+        while(toTake.size() > 0) {
+            Step s = toTake.remove();
+            if(s.oob() || s.blocked() || s.visited()) continue;
+
+            if(s.last()) {
+                result = s.steps;
+                break;
+            }
+
+            s.visit();
+            s.queueNexts(toTake);
+        }
+
+
+        PrintWriter out = new PrintWriter(new File("dream.out"));
+        System.out.println(result);
+        out.println(result);
+        out.close();
+    }
+
+    static class Cell {
+        int type;
+        int[] visited;
+        /*
+        0 = red
+        1 = pink
+        2 = orange
+        3 = blue
+        4 = purple
+
+        pink: 2 dimensions (orange or no orange)
+
+        orange and blue: 1 dimension (guaranteed to smell like oranges)
+
+        purple: 4 dimension (4 directions, lose orange smell)
+
+        */
+        Cell(Scanner in) {
+            this(in.nextInt());
+        }
+        Cell(int i) {
+            type = i;
+
+            if(type == 1) visited = new int[2];
+            if(type == 2 || type == 3) visited = new int[1];
+            if(type == 4) visited = new int[4];
+
+            // types 0s can't be visited
+        }
+    }
+
+    static class Step {
+        int r, c;
+        int dir;
+        int steps;
+        boolean orange;
+
+        Step(int rr, int cc, boolean oo, int dd, int ss) {
+            r = rr;
+            c = cc;
+            orange = oo;
+            dir = dd;
+            steps = ss;
+        }
+
+        boolean last() {
+            return r == n - 1 && c == m - 1;
+        }
+
+        boolean oob() {
+            return r < 0 || c < 0 || r >= n || c >= m;
+        }
+
+        boolean blocked() {
+            return maze[r][c].type == 0 || maze[r][c].type == 3 && !orange;
+        }
+
+        boolean visited() {
+            switch(maze[r][c].type) {
+            case 1:
+                return maze[r][c].visited[orange ? 1 : 0] > 0;
+            case 2:
+            case 3:
+                return maze[r][c].visited[0] > 0;
+            case 4:
+                return maze[r][c].visited[dir] > 0;
+            default:
+                return false;
+            }
+        }
+
+        void visit() {
+            /*
+            Ternary operator:
+            int orangeInt = orange ? 1 : 0;
+
+            int orangeInt;
+            if(orange) {
+                orangeInt = 1;
+            }
+            else {
+                orangeInt = 0;
+            }
+
+            */
+
+
+            switch(maze[r][c].type) {
+            case 1:
+                maze[r][c].visited[orange ? 1 : 0] = steps;
+                break;
+            case 2:
+            case 3:
+                maze[r][c].visited[0] = steps;
+                break;
+            case 4:
+                maze[r][c].visited[dir] = steps;
+            }
+
+            /*
+            Equivalent if-statement logic:
+
+            if(maze[r][c].type == 1) {
+                maze[r][c].visited[orange ? 1 : 0] = steps;
+            }
+            else if(maze[r][c].type == 2 || maze[r][c].type == 3) {
+                maze[r][c].visited[0] = steps;
+            }
+            else if(maze[r][c].type == 4) {
+                maze[r][c].visited[dir] = steps;
+            }
+
+            */
+
+            /*
+            int x = 10;
+            switch(x) {
+            case 1:
+                System.out.println("x is equal to 1");
+                break;
+            case 2:
+                System.out.println("x is equal to 2");
+                break;
+            case 10:
+                System.out.println("x is equal to 10");
+                break;
+            default:
+                System.out.println("x is some number");
+                break;
+            }
+
+            if(x == 1) {
+                System.out.println("x is equal to 1");
+            }
+            else if(x == 2) {
+                System.out.println("x is equal to 2");
+            }
+            else if(x == 10) {
+                System.out.println("x is equal to 10");
+            }
+            else {
+                System.out.println("x is some number");
+            }
+
+            */
+        }
+
+        static int[] rCh = {1, -1, 0, 0};
+        static int[] cCh = {0, 0, 1, -1};
+
+        void queueNexts(Deque<Step> q) {
+            Cell x = maze[r][c];
+            if(x.type == 4) {
+                Step slide = new Step(r + rCh[dir], c + cCh[dir], false, dir, steps + 1);
+                if(slide.oob() || slide.blocked()) {
+                    // sliding has been blocked! we can go
+                    // any of the other 3 directions instead
+                    for(int d = 1; d <= 3; d++) {
+                        int dir2 = (dir + d) % 4;
+                        q.add(new Step(r + rCh[dir2], c + cCh[dir2], false, dir2, steps + 1));
+                    }
+                }
+                else {
+                    q.add(slide);
+                }
+            }
+            else { // NOT sliding - can go any direction
+                boolean o2 = x.type == 2 ? true : orange;
+
+                for(int d = 0; d <= 3; d++) {
+                    q.add(new Step(r + rCh[d], c + cCh[d], o2, d, steps + 1));
+                }
+            }
+        }
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+import java.util.*;
+import java.io.*;
+public class Lesson06_DFS {
+    public static void main(String[] args) {
+        /*
+        BFS: breadth-first search
+
+
+
+        starting at the root (or some node)
+
+        visit all the closer nodes before you visit all the further nodes
+        invariant: never visit a node that is further away before a node that is closer
+                        1
+                      /    \
+                    2       3
+                  /   \   /   \
+                 4    5  6     7
+
+        BFS: 1 2 3 4 5 6 7
+             1 3 2 7 6 5 4
+             1 2 3 5 4 7 6
+             1 3 2 5 4 7 6
+
+
+        DFS: depth-first search
+
+        starting at the root (or some node)
+
+        go as far as possible in one direction until you can't anymore, then backtrack until you can go further in a different direction
+
+
+                        1
+                      /    \
+                    2       3
+                  /   \   /   \
+                 4    5  6     7
+
+        DFS: 1 2 4 5 3 6 7
+
+             1 3 7 6 2 5 4
+
+             1 2 5 4 3 7 6
+
+             1 3 6 7 2 5 4
+
+        Implementations:
+        - Recursive
+        - Iterative
+
+        */
+
+        // Adjacency list
+        ArrayList<Integer>[] adjList = new ArrayList[8];
+        // index: node
+        // list.get(index): neighbors of index
+
+        // {null, null, null, null, null, null, null, null}
+        for(int i = 0; i < adjList.length; i++) {
+            adjList[i] = new ArrayList<>();
+        }
+        /*
+        1: {3, 2}
+        2: {1, 4, 5}
+        3: {6, 7}
+        4: {2}
+        5: {2}
+        6: {3}
+        7: {3}
+
+        */
+        adjList[1].add(3);
+        adjList[3].add(1);
+
+        adjList[1].add(2);
+        adjList[2].add(1);
+
+        adjList[2].add(4);
+        adjList[4].add(2);
+
+
+
+        adjList[3].add(6);
+        adjList[6].add(3);
+
+        adjList[2].add(5);
+        adjList[5].add(2);
+
+        adjList[3].add(7);
+        adjList[7].add(3);
+
+        // dfs(1, adjList, new HashSet<Integer>());
+
+        /*
+        Queue:
+            - data structure
+            - FIFO - first in first out
+
+            add: O(1) - can only add to the back of the queue
+            remove: O(1) - can only remove from the front of the queue
+
+            ex. let's add the numbers 5 4 7 9 to the queue
+
+            front                                       back
+        */
+
+        Deque<Integer> queue = new ArrayDeque<>();
+        queue.add(5);
+        queue.add(4);
+        queue.add(7);
+        queue.add(9);
+
+        System.out.println(queue.remove());
+        System.out.println(queue.remove());
+        System.out.println(queue.remove());
+        System.out.println(queue.remove());
+
+
+        bfs(1, adjList);
+        /*
+        1 3 2 6 7 4 5
+        */
+
+    }
+
+    static void dfs(int start, ArrayList<Integer>[] graph) {
+        Deque<Integer> stack = new ArrayDeque<>();
+        HashSet<Integer> visited = new HashSet<>();
+        queue.push(start);
+
+        while(!stack.isEmpty()) {
+            int curr = stack.pop();
+            if(visited.contains(curr)) {
+                continue;
+            }
+            visited.add(curr);
+
+            // process the current node
+            System.out.println(curr);
+
+            // queue up curr's neighbors to be visited
+            for(int neighbor : graph[curr]) {
+                stack.push(neighbor);
+            }
+
+        }
+    }
+
+    static void bfs(int start, ArrayList<Integer>[] graph) {
+        Deque<Integer> queue = new ArrayDeque<>();
+        HashSet<Integer> visited = new HashSet<>();
+        queue.add(start);
+
+        while(!queue.isEmpty()) {
+            int curr = queue.remove();
+            if(visited.contains(curr)) {
+                continue;
+            }
+            visited.add(curr);
+
+            // process the current node
+            System.out.println(curr);
+
+            // queue up curr's neighbors to be visited
+            for(int neighbor : graph[curr]) {
+                queue.add(neighbor);
+            }
+
+        }
+    }
+
+
+    static void dfs(int start, ArrayList<Integer>[] graph, HashSet<Integer> visited) {
+        if(visited.contains(start)) {
+            return;
+        }
+        // Visit start
+        visited.add(start);
+
+        // Do whatever work needed here
+        System.out.println(start);
+
+
+        for(Integer neighbor : graph[start]) {
+            if(!visited.contains(neighbor)) {
+                dfs(neighbor, graph, visited);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+/*
+
+andrewchen@staff.ktbyte.com
+
+Andrew
+
+USACO Silver 1
+
+CS @ Cornell
+
+USACO
+
+Apple, Amazon, Figma, Databricks
+------------
+USACO Silver 1
+- Students: passed bronze, didn't pass bronze and silver but intend on passing both
+- Concepts for silver: cycle detections, greedy algorithms, graphs (DFS/BFS), floodfill, adhoc
+
+USACO Silver 2
+- Advanced problems
+------------
+Tip
+- Make sure you're doing extra problems on top of what's studied in class
+- Don't memorize solutions, instead: learn the problem-solving process
+- Last resort(s): look at solution, chatgpt
+------------
+Name
+Grade
+Levels passed in USACO (Passed bronze, haven't passed bronze)
+Years with KTBYTE
+
+
+Aaron
+10
+passed bronze
+3-4 years
+
+
+Zayla
+9
+haven't passed bronze (took bronze course)
+started this year
+
+
+Zachary
+11
+haven't passed bronze
+started this year
+
+Aron
+8
+haven't passed bronze
+Learned previously (2a, 2b, 4a, 4b)
+
+Victor
+11
+passed bronze last year
+learned bronze previously, picking it up again
+
+Sahana
+11
+passed bronze
+started working towards silver earlier this year, trying to get back into it now
+
+Sarthak
+12
+haven't passed bronze
+This past summer
+
+*/
